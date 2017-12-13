@@ -43,6 +43,7 @@ def split_base_into_validate_and_train(base, k, i):
 
 
 def train_perceptron(base, max_iter, eta):
+    print(eta)
     w0 = 0.0
     w = [0.0] * 4
     m = len(base)
@@ -56,21 +57,43 @@ def train_perceptron(base, max_iter, eta):
     return w0, w
 
 
-#k-fold cross-validation
+def compute_error(base_validation, w0, w):
+    nb_correct = 0
+    for i in range(len(base_validation)):
+        x = base_validation[i][1:]
+        y = base_validation[i][0]
+        if (y*((np.dot(w, x))+w0))>0:
+            nb_correct = nb_correct+1
+    return nb_correct/len(base_validation)
+
+
+# k-fold cross-validation
 def cross_validation(st,tt,k):
-    eta_range = [0.00001, 0.0001, 0.001, 0.01, 0.1]
+    eta_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 0.8, 0.99, 1]
+    epsilon = []
     for eta in eta_range:
+        epsilon_eta_array = []
+        print("eta",eta)
         for i in range(k):
             vk, ek = split_base_into_validate_and_train(st, k, i)
-            train_perceptron(base=ek,max_iter=10,eta=eta)
+            w0, w = train_perceptron(base=ek, max_iter=10, eta=eta)
+            epsilon_eta_array.append(compute_error(base_validation=vk, w0=w0, w=w))
+        epsilon_eta = np.mean(epsilon_eta_array)
+        epsilon.append(epsilon_eta)
 
 
 def main():
     iris = read_data(file="iris.data")
-    st, tt = split_base_into_learn_and_test(base=iris, proportion=0.75)
-    w0, w = train_perceptron(base=st, max_iter=10, eta=0.1)
-    print(w0, w)
+    # print(len(iris))
+    st, tt = split_base_into_learn_and_test(base=iris, proportion=0.05)
+    for eta in [0.00,0.01,0.1,1]:
+        w0, w = train_perceptron(base=st, max_iter=1, eta=eta)
+        print(w0, w)
+        print(compute_error(base_validation=tt,w0=w0,w=w))
+    # cross_validation(st, tt, 5)
+
 
 main()
 
 # now we need to choose eta with cross validation
+
