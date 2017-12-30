@@ -112,8 +112,8 @@ def train_adaline(base, max_iter, eta, eta_2, tt):
         prediction = ((np.dot(w, x)) + w0)
         prediction_2 = ((np.dot(w_2, x)) + w0_2)
 
-        print("prediction", prediction)
-        print("prediction_2", prediction)
+        # print("prediction", prediction)
+        # print("prediction_2", prediction)
 
         w0 = w0 + eta * (y - prediction)
         w = w + eta * (y - prediction) * x
@@ -125,48 +125,54 @@ def train_adaline(base, max_iter, eta, eta_2, tt):
         #     w_2 = w_2 + eta_2 * y * x
 
         # print("% good classification", compute_error(tt,w0,w))
-        print("x", x, "y", y)
-        print("w0", w0, "w", w)
-        print("w0_2", w0_2, "w_2", w_2)
-        print("adaline performance", compute_error(tt, w0, w))
-        graph_x = np.linspace(-2, 10, 30)
-        graph_y = np.linspace(0, 0, 30)
-        if w[1] != 0:
-            for j in range(len(graph_x)):
-                graph_y[j] = (-1 * w0 - 1 * w[0] * graph_x[j]) / w[1]
-        plt.axis([-2, 10, -2, 10])
-        plt.plot(np.array(considered_examples)[:, 0], np.array(considered_examples)[:, 1], 'o')
-        plt.plot(graph_x, graph_y)
-        print("perceptron performance", compute_error(tt, w0_2, w_2))
-        graph_x_2 = np.linspace(-2, 10, 45)
-        graph_y_2 = np.linspace(0, 0, 45)
-        if w_2[1] != 0:
-            for j in range(len(graph_x_2)):
-                graph_y_2[j] = (-1 * w0_2 - 1 * w_2[0] * graph_x_2[j]) / w_2[1] + 0.1
-        plt.axis([-2, 10, -2, 10])
-        plt.plot(graph_x_2, graph_y_2, 'o')
+        # print("x", x, "y", y)
+        # print("w0", w0, "w", w)
+        # print("w0_2", w0_2, "w_2", w_2)
+        # print("adaline performance", compute_error(tt, w0, w))
+        # graph_x = np.linspace(-2, 10, 30)
+        # graph_y = np.linspace(0, 0, 30)
+        # if w[1] != 0:
+        #     for j in range(len(graph_x)):
+        #         graph_y[j] = (-1 * w0 - 1 * w[0] * graph_x[j]) / w[1]
+        # plt.axis([-2, 10, -2, 10])
+        # plt.plot(np.array(considered_examples)[:, 0], np.array(considered_examples)[:, 1], 'o')
+        # plt.plot(graph_x, graph_y)
+        # print("perceptron performance", compute_error(tt, w0_2, w_2))
+        # graph_x_2 = np.linspace(-2, 10, 45)
+        # graph_y_2 = np.linspace(0, 0, 45)
+        # if w_2[1] != 0:
+        #     for j in range(len(graph_x_2)):
+        #         graph_y_2[j] = (-1 * w0_2 - 1 * w_2[0] * graph_x_2[j]) / w_2[1] + 0.1
+        # plt.axis([-2, 10, -2, 10])
+        # plt.plot(graph_x_2, graph_y_2, 'o')
     return w0, w
+
 
 def compute_error(base_validation, w0, w):
     nb_correct = 0
     for i in range(len(base_validation)):
         x = base_validation[i][1:]
         y = base_validation[i][0]
-        #print(x, y)
+        # print(x, y)
         if (y * ((np.dot(w, x)) + w0)) > 0:
             nb_correct = nb_correct + 1
     return nb_correct / len(base_validation)
 
 
 # k-fold cross-validation
+# Cross-validation on perceptron is non-sense since learning rate has no impact on perceptron.
+# Cross-validation on adaline returns optimal learning rate,
+# which is dependant on the number of learning iterations max_iter.
+# That's legit since gradient descent with low learning-rate is slower (need more iterations)
+# but is more accurate when it is not trapped by local extrema.
 def cross_validation(st, tt, k):
-    eta_range = [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]
+    eta_range = [0.00001, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02]
     epsilon = []
     for eta in eta_range:
         epsilon_eta_array = []
         for i in range(k):
             vk, ek = split_base_into_validate_and_train(st, k, i)
-            w0, w = train_perceptron(base=ek, max_iter=10, eta=eta, tt=ek)
+            w0, w = train_adaline(base=ek, max_iter=5000, eta=eta, eta_2=eta, tt=ek)
             epsilon_eta_array.append(compute_error(base_validation=vk, w0=w0, w=w))
         epsilon_eta = np.mean(epsilon_eta_array)
         epsilon.append(epsilon_eta)
@@ -184,18 +190,18 @@ def main():
 
     print("taille apprentissage", len(st))
 
-    w0, w = train_adaline(base=st, max_iter=2000, eta=0.001, eta_2=0.01, tt=tt)
+    w0, w = train_adaline(base=st, max_iter=2000, eta=0.01, eta_2=0.01, tt=tt)
     print("w0 =", w0, "w =", w)
-    print("% good classification =", compute_error(base_validation=tt, w0=w0, w=w))
+    print("% good classification 1=", compute_error(base_validation=tt, w0=w0, w=w))
 
     # for eta in [0.001, 0.01, 0.1, 1, 10, 100, 1000]:
     #     w0, w = train_perceptron(base=st, max_iter=30000, eta=eta, tt=tt)
     #     print("w0 =", w0, "w =", w)
     #     print("% good classification =", compute_error(base_validation=tt,w0=w0,w=w))
     #
-    # for _ in range(10):
-    #     best_eta = cross_validation(st, tt, 5)
-    #     print(best_eta)
+    for _ in range(20):
+        best_eta = cross_validation(st, tt, 5)
+        print(best_eta)
 
 
 main()
