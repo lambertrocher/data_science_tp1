@@ -50,59 +50,102 @@ def train_perceptron(base, max_iter, eta, eta_2, tt):
     nb_attributes = len(base[0]) - 1
     w0 = 0.0
     w = [0.0] * nb_attributes
-
     w0_2 = 0.0
     w_2 = [0.0] * nb_attributes
-
-
     m = len(base)
     for _ in range(max_iter):
-
         i = randint(0, m - 1)
         x = base[i][1:]
         y = base[i][0]
-
-
         considered_examples.append(list(base[i][1:]))
-
         plt.show()
-        # sleep(1)
-        # plt.close('all')
         if y * ((np.dot(w, x)) + w0) <= 0:
             w0 = w0 + eta * y
             w = w + eta * y * x
-
             w0_2 = w0_2 + eta_2 * y
             w_2 = w_2 + eta_2 * y * x
-    # print("% good classification", compute_error(tt,w0,w))
 
+        # print("% good classification", compute_error(tt,w0,w))
         print("x", x, "y", y)
         print("w0", w0, "w", w)
         print("w0_2", w0_2, "w_2", w_2)
-
         print(compute_error(tt, w0, w))
         graph_x = np.linspace(-2, 10, 30)
         graph_y = np.linspace(0, 0, 30)
         if w[1] != 0:
             for j in range(len(graph_x)):
                 graph_y[j] = (-1 * w0 - 1 * w[0] * graph_x[j]) / w[1]
-
         plt.axis([-2, 10, -2, 10])
         plt.plot(np.array(considered_examples)[:, 0], np.array(considered_examples)[:, 1], 'o')
         plt.plot(graph_x, graph_y)
-
         print(compute_error(tt, w0_2, w_2))
         graph_x_2 = np.linspace(-2, 10, 45)
         graph_y_2 = np.linspace(0, 0, 45)
         if w_2[1] != 0:
             for j in range(len(graph_x_2)):
                 graph_y_2[j] = (-1 * w0_2 - 1 * w_2[0] * graph_x_2[j]) / w_2[1] + 0.1
-
         plt.axis([-2, 10, -2, 10])
         plt.plot(graph_x_2, graph_y_2)
-
     return w0, w
 
+
+def train_adaline(base, max_iter, eta, eta_2, tt):
+    considered_examples = []
+    nb_attributes = len(base[0]) - 1
+    w0 = 0.0
+    w = [0.0] * nb_attributes
+    w0_2 = 0.0
+    w_2 = [0.0] * nb_attributes
+    m = len(base)
+    for _ in range(max_iter):
+        i = randint(0, m - 1)
+        x = base[i][1:]
+        y = base[i][0]
+        considered_examples.append(list(base[i][1:]))
+        # plt.show()
+        # if y * ((np.dot(w, x)) + w0) <= 0:
+        #     w0 = w0 + eta * y
+        #     w = w + eta * y * x
+        #     w0_2 = w0_2 + eta_2 * y
+        #     w_2 = w_2 + eta_2 * y * x
+
+        prediction = ((np.dot(w, x)) + w0)
+        prediction_2 = ((np.dot(w_2, x)) + w0_2)
+
+        print("prediction", prediction)
+        print("prediction_2", prediction)
+
+        w0 = w0 + eta * (y - prediction)
+        w = w + eta * (y - prediction) * x
+
+        w0_2 = w0_2 + eta_2 * (y - prediction)
+        w_2 = w_2 + eta_2 * (y - prediction_2) * x
+        # if y * ((np.dot(w_2, x)) + w0_2) <= 0:
+        #     w0_2 = w0_2 + eta_2 * y
+        #     w_2 = w_2 + eta_2 * y * x
+
+        # print("% good classification", compute_error(tt,w0,w))
+        print("x", x, "y", y)
+        print("w0", w0, "w", w)
+        print("w0_2", w0_2, "w_2", w_2)
+        print("adaline performance", compute_error(tt, w0, w))
+        graph_x = np.linspace(-2, 10, 30)
+        graph_y = np.linspace(0, 0, 30)
+        if w[1] != 0:
+            for j in range(len(graph_x)):
+                graph_y[j] = (-1 * w0 - 1 * w[0] * graph_x[j]) / w[1]
+        plt.axis([-2, 10, -2, 10])
+        plt.plot(np.array(considered_examples)[:, 0], np.array(considered_examples)[:, 1], 'o')
+        plt.plot(graph_x, graph_y)
+        print("perceptron performance", compute_error(tt, w0_2, w_2))
+        graph_x_2 = np.linspace(-2, 10, 45)
+        graph_y_2 = np.linspace(0, 0, 45)
+        if w_2[1] != 0:
+            for j in range(len(graph_x_2)):
+                graph_y_2[j] = (-1 * w0_2 - 1 * w_2[0] * graph_x_2[j]) / w_2[1] + 0.1
+        plt.axis([-2, 10, -2, 10])
+        plt.plot(graph_x_2, graph_y_2, 'o')
+    return w0, w
 
 def compute_error(base_validation, w0, w):
     nb_correct = 0
@@ -137,11 +180,11 @@ def main():
 
     print(base)
 
-    st, tt = split_base_into_learn_and_test(base=base, proportion=0.1)
+    st, tt = split_base_into_learn_and_test(base=base, proportion=0.75)
 
     print("taille apprentissage", len(st))
 
-    w0, w = train_perceptron(base=st, max_iter=200, eta=0.01, eta_2=1, tt=tt)
+    w0, w = train_adaline(base=st, max_iter=2000, eta=0.001, eta_2=0.01, tt=tt)
     print("w0 =", w0, "w =", w)
     print("% good classification =", compute_error(base_validation=tt, w0=w0, w=w))
 
