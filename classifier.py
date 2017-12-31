@@ -3,13 +3,18 @@ from random import randint
 import matplotlib.pyplot as plt
 
 
-def read_data(file, nb_attributes, prediction):
+def read_data(file, prediction):
     file_opened = open("./dataset/" + file, "r")
     array = []
+    i = 0
+    nb_attributes = 0
     for line in file_opened.readlines():
         line_strip = line.strip().split(',')
+        if i == 0:
+            nb_attributes = len(line_strip) -1
         if len(line_strip) == nb_attributes + 1:
             array.append(line_strip)
+        i += 1
     for line in array:
         if len(line) == nb_attributes + 1:
             if line[nb_attributes] == prediction:
@@ -25,11 +30,12 @@ def read_data(file, nb_attributes, prediction):
 
 
 class Classifier(object):
-    def __init__(self, dataset):
+    def __init__(self, dataset=None):
         self.dataset = dataset
-        self.train_dataset, self.test_dataset = self.split_dataset(proportion=0.75)
-        self.nb_explanatory_var = len(self.train_dataset[0]) - 1
-        self.nb_sample = len(dataset)
+        if dataset is not None:
+            self.train_dataset, self.test_dataset = self.split_dataset(proportion=0.75)
+            self.nb_explanatory_var = len(self.train_dataset[0]) - 1
+            self.nb_sample = len(dataset)
         self.w = [0.0] * self.nb_explanatory_var
         self.w0 = 0
 
@@ -50,7 +56,7 @@ class Classifier(object):
             self.learn_step(x, y, eta)
             if visualization:
                 vis.animate(self.w, self.w0, samples)
-        print("w =", self.w, "w0 =", self.w0)
+        #print("w =", self.w, "w0 =", self.w0)
         return list(self.w), self.w0
 
     def learn_step(self, x, y, eta):
@@ -67,7 +73,7 @@ class Classifier(object):
             if (y * ((np.dot(self.w, x)) + self.w0)) > 0:
                 nb_correct = nb_correct + 1
         result = nb_correct / len(test_dataset)
-        print("% of good classification =", result)
+        #print("% of good classification =", result)
         return result
 
     def split_dataset(self, proportion):
@@ -80,9 +86,19 @@ class Classifier(object):
         t = list(dataset)
         return s, t
 
+    def miss(self, dataset=None):
+        if dataset is None:
+            dataset = self.train_dataset
+        miss = []
+        for i in range(len(dataset)):
+            x = dataset[i][1:]
+            y = dataset[i][0]
+            miss.append((y * ((np.dot(self.w, x)) + self.w0)) > 0)
+        return miss, [x if x == 1 else -1 for x in miss]
+
 
 class Perceptron(Classifier):
-    def __init__(self, dataset):
+    def __init__(self, dataset=None):
         super().__init__(dataset)
 
     def learn_step(self, x, y, eta=1):
@@ -92,7 +108,7 @@ class Perceptron(Classifier):
 
 
 class Adaline(Classifier):
-    def __init__(self, dataset):
+    def __init__(self, dataset=None):
         super().__init__(dataset)
 
     def learn_step(self, x, y, eta=1):
@@ -163,18 +179,34 @@ class CrossValidation(object):
         return validate, train
 
 
+class AdaBoost(Classifier):
+    def __init__(self, dataset):
+        super().__init__(dataset)
+
+    def learn(self, max_iter, eta, dataset=None, visualization=False):
+        for m in range(max_iter):
+            adaline = Adaline()
+            w, w0 = adaline.learn(max_iter=2000, eta=eta, dataset=self.train_dataset)
+            #print(adaline.evaluate())
+            miss, miss2 = adaline.miss(dataset=self.train_dataset)
+            err_m = np.dot(weights, miss) / sum(w)
+
+
 if __name__ == '__main__':
-    dataset = read_data(file="iris.data", nb_attributes=4, prediction="Iris-setosa")
-    dataset = list(np.array(dataset)[:, 0:3])
+    dataset = read_data(file="ionosphere.data", prediction="b")
+    #print(dataset)
+    #dataset = list(np.array(dataset)[:, 0:3])
 
     # perceptron = Perceptron(dataset)
     # perceptron.learn(max_iter=2000, eta=0.1)
     # perceptron.evaluate()
-
-    adaline = Adaline(dataset)
-    adaline.learn(max_iter=500, eta=0.01, visualization=True)
-    adaline.evaluate()
+    # adaline = Adaline(dataset)
+    # adaline.learn(max_iter=3000, eta=0.002, visualization=False)
+    # adaline.evaluate()
     #
     # eta_range = [0.00001, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
-    # cross_validation = CrossValidation(dataset=dataset, k=5, eta_range=eta_range, max_iter=500)
+    # cross_validation = CrossValidation(dataset=dataset, k=5, eta_range=eta_range, max_iter=3000)
     # cross_validation.cross_validation()
+
+    adaboost = AdaBoost(dataset)
+    adaboost.learn(max_iter=10, eta=0.001)
