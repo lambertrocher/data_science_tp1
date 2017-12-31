@@ -6,7 +6,7 @@ from time import sleep
 
 
 def read_data(file, nb_attributes, prediction):
-    file_opened = open(file, "r")
+    file_opened = open("./dataset/"+file, "r")
     array = []
     for line in file_opened.readlines():
         line_strip = line.strip().split(',')
@@ -92,6 +92,7 @@ def train_perceptron(base, max_iter, eta, eta_2, tt):
 def train_adaline(base, max_iter, eta, eta_2, tt):
     considered_examples = []
     nb_attributes = len(base[0]) - 1
+    print(nb_attributes)
     w0 = 0.0
     w = [0.0] * nb_attributes
     w0_2 = 0.0
