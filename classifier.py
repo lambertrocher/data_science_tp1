@@ -1,5 +1,6 @@
 import numpy as np
 from random import randint
+from math import exp
 import matplotlib.pyplot as plt
 
 
@@ -23,6 +24,8 @@ def read_data(file, prediction):
                 line.insert(0, -1.0)
             del (line[nb_attributes + 1])
             for i in range(nb_attributes):
+                if line[i + 1] == "?":
+                    line[i + 1] = 0
                 line[i + 1] = float(line[i + 1])
     for i in range(len(array)):
         array[i] = np.array(array[i])
@@ -52,15 +55,16 @@ class Classifier(object):
             self.nb_sample = len(dataset)
             self.w = [0.0] * self.nb_explanatory_var
             self.w0 = 0
-        for _ in range(max_iter):
+        for iteration in range(max_iter):
             i = randint(0, self.nb_sample - 1)
             x = dataset[i][1:]
             y = dataset[i][0]
             samples.append(list(dataset[i][1:]))
             self.learn_step(x, y, eta)
             if visualization:
-                vis.animate(self.w, self.w0, samples)
-        # print("w =", self.w, "w0 =", self.w0)
+                if iteration > 450:
+                    vis.animate(self.w, self.w0, samples)
+        print("w =", self.w, "w0 =", self.w0)
         return list(self.w), self.w0
 
     def learn_step(self, x, y, eta):
@@ -134,6 +138,30 @@ class Adaline(Classifier):
         self.w = self.w + eta * (y - prediction) * x
 
 
+class LogisticRegression(Classifier):
+    def __init__(self):
+        super().__init__()
+
+    def logistic(self, x):
+        # print(x)
+        return 1/(1+exp(-x))
+
+    def learn_step(self, x, y, eta=0.1):
+        prediction = ((np.dot(self.w, x)) + self.w0)
+        self.w0 = self.w0 + eta * y * (1 - self.logistic(y * prediction))
+        self.w = self.w + eta * y * (1 - self.logistic(y * prediction)) * x
+
+
+class ExpModel(Classifier):
+    def __init__(self):
+        super().__init__()
+
+    def learn_step(self, x, y, eta=0.1):
+        prediction = ((np.dot(self.w, x)) + self.w0)
+        self.w0 = self.w0 + eta * y * exp(-y * prediction)
+        self.w = self.w + eta * y * exp(-y * prediction) * x
+
+
 class Visualization(object):
     def __init__(self, x1, x2):
         self.graph_x = np.linspace(x1, x2, 100)
@@ -149,6 +177,7 @@ class Visualization(object):
         self.plot.set_ydata(self.graph_y)
         self.plot_samples = plt.plot(np.array(samples)[:, 0], np.array(samples)[:, 1], 'o')
         plt.pause(0.02)
+
 
     @staticmethod
     def show():
@@ -173,7 +202,7 @@ class CrossValidation(object):
         for eta in self.eta_range:
             epsilon_eta_array = []
             for i in range(self.k):
-                adaline = Adaline()
+                adaline = Perceptron()
                 vk, ek = self.split_validate_train(self.k, i)
                 adaline.learn(max_iter=self.max_iter, eta=eta, dataset=ek)
                 epsilon_eta_array.append(adaline.evaluate(test_dataset=vk))
@@ -225,14 +254,26 @@ class AdaBoost(Classifier):
 def main():
     dataset = read_data(file="iris.data", prediction="Iris-setosa")
     # print(dataset)
-    dataset = list(np.array(dataset)[:, 0:3])
+    # dataset = list(np.array(dataset)[:, 0:3])
+    #
+    # adaline = Adaline()
+    # adaline.learn(dataset=dataset, max_iter=500, eta=0.01, visualization=True)
+    # print(adaline.evaluate())
 
-    adaline = Adaline()
-    adaline.learn(dataset=dataset, max_iter=500, eta=0.01, visualization=True)
-    print(adaline.evaluate())
+    # adaline = Adaline()
+    # adaline.learn(dataset=dataset, max_iter=500, eta=0.01, visualization=True)
+    # print(adaline.evaluate())
+
+    # exp_model = ExpModel()
+    # exp_model.learn(dataset=dataset, max_iter=500, eta=0.01, visualization=True)
+    # print(exp_model.evaluate())
+
+    # log_reg = LogisticRegression()
+    # log_reg.learn(dataset=dataset, max_iter=500, eta=0.01, visualization=False)
+    # print(log_reg.evaluate())
 
     #
-    # eta_range = [0.00001, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
+    # eta_range = [0.00001, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.5]
     # cross_validation = CrossValidation(dataset=dataset, k=5, eta_range=eta_range, max_iter=500)
     # for _ in range(10):
     #     cross_validation.cross_validation()
